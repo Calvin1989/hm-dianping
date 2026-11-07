@@ -25,6 +25,7 @@ Spring Boot 2.3 · Redis · Redisson · MyBatis-Plus · MySQL · Lua · Hutool
 2. **启动时消费者组不存在**：原版需要手动执行 `XGROUP CREATE`，否则首次读取抛出 `NOGROUP`。现在启动时用 `XGROUP CREATE ... MKSTREAM` 自动创建，组已存在时忽略。
 3. **Redis 不可用时补偿循环空转**：原版处理 pending-list 出错时无等待地重试，会占满 CPU、刷屏日志。现在加入退避，并在出错时退出补偿循环。
 4. **库存 key 不存在时脚本报错**：`tonumber(nil) <= 0` 会让 Lua 脚本抛异常，现在按库存不足处理。
+5. **异步下单没有事务**：原版扣数据库库存和插入订单不在同一个事务里，插入失败时库存已扣、消息未 ACK，补偿重试会再扣一次。现在用 `TransactionTemplate` 把两步放进一个事务（类内部调用 `@Transactional` 不生效），并保证先提交事务再释放锁。
 
 ## 本地运行
 
